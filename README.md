@@ -2,7 +2,7 @@
 
 A working payment integration: Django REST backend that talks to Paystack,
 and a React checkout component for the frontend. Card/mobile-money entry
-happens on Paystack's own hosted page — your servers never see or store
+happens on Paystack's own hosted page, your servers never see or store
 card details.
 
 ## How it works
@@ -90,15 +90,15 @@ Make sure the route path matches `PAYSTACK_CALLBACK_URL` in the backend `.env`.
 - **Secret key** (`PAYSTACK_SECRET_KEY`) lives only in `backend/.env` and is
   never sent to the browser.
 - **Public key** is not even needed with this redirect-based flow, since
-  the frontend never calls Paystack directly — it only calls your backend.
-- Both `.env` files are covered by `.gitignore` — commit `.env.example`
+  the frontend never calls Paystack directly, it only calls your backend.
+- Both `.env` files are covered by `.gitignore`  commit `.env.example`
   only, never `.env`.
 - Amount validation happens both client-side (basic) and server-side
   (`InitializePaymentSerializer`) — never trust the client alone.
 - Webhook signature is verified with `hmac.compare_digest` to avoid
   timing attacks.
 - Always re-verify a transaction server-side (`verify_payment`) rather
-  than trusting the redirect query string — a customer could edit the URL.
+  than trusting the redirect query string, a customer could edit the URL.
 
 ## Going further
 
