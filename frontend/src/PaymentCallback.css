@@ -1,22 +1,84 @@
+.callback-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: visible;
+}
+
 .callback-card {
-  max-width: 380px;
-  margin: 60px auto;
-  padding: 28px;
-  border: 1px solid #e2e4e8;
-  border-radius: 14px;
+  width: min(100%, 620px);
+  min-height: 470px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 60px 42px;
   text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  border: 1px solid var(--line);
+  border-radius: 32px;
+  background: var(--paper);
+  box-shadow: 0 30px 80px rgba(86, 57, 37, .14);
 }
 
-.callback-title {
-  margin: 0 0 8px;
-  font-size: 18px;
+.callback-card h1 {
+  max-width: 520px;
+  margin: 10px 0 16px;
+  color: var(--ink);
+  font: 700 clamp(2.6rem, 7vw, 4.6rem)/.98 "Playfair Display", Georgia, serif;
+  letter-spacing: -.04em;
 }
-
-.callback-title--success {
-  color: #1b4332;
+.callback-card > p:last-of-type {
+  max-width: 490px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.75;
 }
+.callback-eyebrow {
+  margin: 20px 0 0;
+  color: var(--coral-dark);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.callback-status {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  color: white;
+  border-radius: 45% 55% 50% 46%;
+  font-size: 1.6rem;
+  font-weight: 700;
+  transform: rotate(-5deg);
+}
+.callback-status--success { background: var(--sage); }
+.callback-status--failed { background: var(--coral); }
+.callback-link {
+  display: inline-flex;
+  margin-top: 28px;
+  padding: 13px 20px;
+  color: white;
+  border-radius: 999px;
+  background: var(--coral);
+  font-size: .82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.callback-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--line);
+  border-top-color: var(--coral);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.callback-title--failed {
-  color: #b91c1c;
+@media (max-width: 480px) {
+  .callback-page { padding: 12px; }
+  .callback-card { min-height: min(520px, calc(100dvh - 24px)); padding: 40px 22px; border-radius: 24px; }
+  .callback-card h1 { font-size: clamp(2.35rem, 13vw, 3.3rem); }
+  .callback-card > p:last-of-type { font-size: .92rem; }
 }
