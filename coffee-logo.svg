@@ -1,0 +1,31 @@
+<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cupGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8a5a3b"/>
+      <stop offset="100%" stop-color="#5c3a24"/>
+    </linearGradient>
+    <linearGradient id="coffeeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a2c17"/>
+      <stop offset="100%" stop-color="#2e1a0e"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="120" cy="120" r="112" fill="#f4ede2"/>
+
+  <!-- steam -->
+  <path d="M96 58c-8-10-8-18 0-28" fill="none" stroke="#c9a27a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M120 54c-8-10-8-18 0-28" fill="none" stroke="#c9a27a" stroke-width="7" stroke-linecap="round"/>
+  <path d="M144 58c-8-10-8-18 0-28" fill="none" stroke="#c9a27a" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- cup handle -->
+  <path d="M172 108c22 0 22 44 0 44" fill="none" stroke="url(#cupGradient)" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- cup body -->
+  <path d="M62 92h116l-10 78c-2 16-16 28-32 28h-42c-16 0-30-12-32-28z" fill="url(#cupGradient)"/>
+
+  <!-- coffee surface -->
+  <ellipse cx="120" cy="98" rx="54" ry="10" fill="url(#coffeeGradient)"/>
+
+  <!-- saucer -->
+  <ellipse cx="120" cy="206" rx="70" ry="10" fill="#8a5a3b"/>
+</svg>
