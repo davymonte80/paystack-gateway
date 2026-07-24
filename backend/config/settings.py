@@ -100,7 +100,10 @@ REST_FRAMEWORK = {
 }
 
 # --- CORS ---
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"])
+CORS_ALLOWED_ORIGINS = env.list(
+    "CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:5173", "https://buymeespresso.vercel.app"],
+)
 
 # --- Paystack ---
 PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY")
