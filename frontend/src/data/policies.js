@@ -6,7 +6,7 @@ export const POLICIES = {
       "Clear expectations make for a better experience. These terms cover use of Coffee and its checkout.",
     sections: [
       { title: "Payments", copy: "Payments are securely handled by Paystack. An order is confirmed only after the transaction is verified by our server." },
-      { title: "Order information", copy: "You are responsible for providing accurate contact and payment information when placing an order." },
+      { title: "Order information", copy: "You are responsible for providing accurate payment information. Email is optional and only needed if you want a receipt or order updates." },
       { title: "Acceptable use", copy: "We may pause or cancel orders connected to fraudulent activity, misuse, or a breach of these terms." },
     ],
   },
@@ -27,7 +27,7 @@ export const POLICIES = {
     introduction:
       "We collect only what we need to create, verify, and support your coffee payment.",
     sections: [
-      { title: "Information we use", copy: "We use your email address and transaction details to create payment records and provide order updates." },
+      { title: "Information we use", copy: "We use transaction details to create and verify payment records. If you provide an email address, we use it for receipts and order updates." },
       { title: "Payment security", copy: "Coffee does not store card details. Sensitive payment information is collected and processed by Paystack." },
       { title: "Data sharing", copy: "We do not sell customer data. Information is shared only with services needed to process and support your order." },
     ],

@@ -1,35 +1,78 @@
-import { useState } from "react";
-import { initializePayment } from "./api";
+import { useEffect, useState } from "react";
+import { fetchPaymentCurrencies, initializePayment } from "./api";
 import "./Checkout.css";
 
-const CURRENCIES = ["USD", "KES", "NGN", "GHS", "ZAR"];
-const COFFEE_PRESETS = {
-  KES: [250, 750, 1250],
-  NGN: [2500, 7500, 12500],
-  GHS: [30, 90, 150],
-  ZAR: [50, 150, 250],
-  USD: [3, 9, 15],
-};
+const FALLBACK_CURRENCIES = [
+  {
+    code: "KES",
+    name: "Kenyan Shilling",
+    minimum_amount: "3",
+    presets: [250, 750, 1250],
+    enabled: true,
+  },
+];
 const COFFEE_COUNTS = [1, 3, 5];
 
 export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [email, setEmail] = useState("");
-  const [amount, setAmount] = useState(defaultAmount);
-  const [currency, setCurrency] = useState("USD");
+  const [currencyOptions, setCurrencyOptions] = useState(FALLBACK_CURRENCIES);
+  const [amount, setAmount] = useState(defaultAmount || String(FALLBACK_CURRENCIES[0].presets[0]));
+  const [currency, setCurrency] = useState(FALLBACK_CURRENCIES[0].code);
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const selectedCurrency = currencyOptions.find((option) => option.code === currency) || currencyOptions[0];
+  const minimumAmount = Number(selectedCurrency.minimum_amount);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchPaymentCurrencies()
+      .then((data) => {
+        if (!isMounted) return;
+
+        const supportedCurrencies = data.supported_currencies?.length
+          ? data.supported_currencies
+          : FALLBACK_CURRENCIES;
+        const enabledCurrencies = supportedCurrencies.filter((option) => option.enabled);
+        const selectableCurrencies = enabledCurrencies.length
+          ? supportedCurrencies
+          : FALLBACK_CURRENCIES;
+        const defaultCurrency = data.default_currency || enabledCurrencies[0]?.code || FALLBACK_CURRENCIES[0].code;
+        const defaultOption =
+          enabledCurrencies.find((option) => option.code === defaultCurrency) ||
+          enabledCurrencies[0] ||
+          FALLBACK_CURRENCIES[0];
+
+        setCurrencyOptions(selectableCurrencies);
+        setCurrency(defaultOption.code);
+
+        setSelectedPreset(0);
+        setAmount(String(defaultOption.presets[0]));
+      })
+      .catch((error) => {
+        onError?.(error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [onError]);
+
   const choosePreset = (index) => {
     setSelectedPreset(index);
-    setAmount(String(COFFEE_PRESETS[currency][index]));
+    setAmount(String(selectedCurrency.presets[index]));
   };
 
   const changeCurrency = (event) => {
     const nextCurrency = event.target.value;
+    const nextCurrencyOption =
+      currencyOptions.find((option) => option.code === nextCurrency) || currencyOptions[0];
+
     setCurrency(nextCurrency);
     if (selectedPreset !== null) {
-      setAmount(String(COFFEE_PRESETS[nextCurrency][selectedPreset]));
+      setAmount(String(nextCurrencyOption.presets[selectedPreset]));
     }
   };
 
@@ -38,19 +81,26 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
     setSelectedPreset(null);
   };
 
+  const chooseCustomAmount = () => {
+    setSelectedPreset(null);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setErrorMessage("");
 
-    if (!email || !amount) {
-      setErrorMessage("Add your email and choose a tip amount to continue.");
+    const trimmedEmail = email.trim();
+    const numericAmount = Number(amount);
+
+    if (!amount || Number.isNaN(numericAmount) || numericAmount < minimumAmount) {
+      setErrorMessage(`Choose or enter a tip amount of at least ${currency} ${minimumAmount}.`);
       return;
     }
 
     setIsSubmitting(true);
     try {
       const { authorization_url: authorizationUrl } = await initializePayment({
-        email,
+        email: trimmedEmail || undefined,
         amount,
         currency,
       });
@@ -88,19 +138,28 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
               <small>{count === 1 ? "coffee" : "coffees"}</small>
             </button>
           ))}
+          <button
+            type="button"
+            className={selectedPreset === null ? "is-selected" : ""}
+            onClick={chooseCustomAmount}
+            aria-pressed={selectedPreset === null}
+          >
+            <span aria-hidden="true">✍️</span>
+            <strong>Custom</strong>
+            <small>amount</small>
+          </button>
         </div>
       </fieldset>
 
       <div className="tip-fields">
         <label className="tip-field">
-          <span>Email</span>
+          <span>Email <small>(optional)</small></span>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
+            placeholder="For a receipt only"
             autoComplete="email"
-            required
           />
         </label>
 
@@ -109,7 +168,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
             <span>Tip amount</span>
             <input
               type="number"
-              min="1"
+              min={minimumAmount}
               step="0.01"
               value={amount}
               onChange={changeAmount}
@@ -121,9 +180,9 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
           <label className="tip-field tip-field--currency">
             <span>Currency</span>
             <select value={currency} onChange={changeCurrency}>
-              {CURRENCIES.map((code) => (
-                <option key={code} value={code}>
-                  {code}
+              {currencyOptions.map((option) => (
+                <option key={option.code} value={option.code} disabled={option.enabled === false}>
+                  {option.code}{option.enabled === false ? " — not enabled" : ""}
                 </option>
               ))}
             </select>
@@ -144,7 +203,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
       </button>
 
       <p className="tip-footnote">
-        Optional support. Pay securely with Paystack.
+        Tip anonymously, or add an email only if you want a receipt. Pay securely with Paystack.
       </p>
     </form>
   );

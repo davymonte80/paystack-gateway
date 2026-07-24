@@ -81,9 +81,15 @@
   font-weight: 700;
 }
 
+.tip-field > span small {
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
 .coffee-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -178,7 +184,7 @@
 @media (max-width: 400px) {
   .tip-card { padding: 25px 20px; border-radius: 24px; }
   .tip-row { grid-template-columns: 1fr; }
-  .coffee-options { gap: 6px; }
+  .coffee-options { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .coffee-options button { gap: 2px 4px; padding-inline: 3px; }
   .tip-card h2 { font-size: 1.55rem; }
   .tip-submit { white-space: normal; }

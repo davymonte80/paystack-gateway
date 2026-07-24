@@ -11,11 +11,35 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from .currencies import PAYSTACK_CURRENCIES, serialize_currency
 from .models import Transaction
 from .serializers import InitializePaymentSerializer, TransactionSerializer
 from .services import PaystackError, PaystackService
 
 paystack = PaystackService()
+
+
+@api_view(["GET"])
+def payment_currencies(request):
+    """
+    Return all Paystack-supported currencies plus the subset enabled for
+    this merchant account. The frontend should only offer enabled currencies.
+    """
+    enabled_codes = settings.PAYSTACK_ENABLED_CURRENCIES
+    supported_currencies = []
+    for code in PAYSTACK_CURRENCIES.keys():
+        currency = serialize_currency(code)
+        currency["enabled"] = code in enabled_codes
+        supported_currencies.append(currency)
+
+    return Response(
+        {
+            "default_currency": settings.PAYSTACK_DEFAULT_CURRENCY,
+            "enabled_currencies": [serialize_currency(code) for code in enabled_codes],
+            "supported_currencies": supported_currencies,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 @api_view(["POST"])
@@ -30,21 +54,28 @@ def initialize_payment(request):
     data = serializer.validated_data
 
     reference = f"TXN-{uuid.uuid4().hex[:12].upper()}"
+    tipper_email = data.get("email", "")
+    paystack_email = tipper_email or settings.PAYSTACK_ANONYMOUS_EMAIL
 
     transaction = Transaction.objects.create(
         reference=reference,
-        email=data["email"],
+        email=tipper_email,
         amount=data["amount"],
-        currency=data.get("currency", "KES"),
+        currency=data.get("currency", settings.PAYSTACK_DEFAULT_CURRENCY),
     )
 
     try:
         result = paystack.initialize_transaction(
-            email=transaction.email,
+            email=paystack_email,
             amount=transaction.amount,
+            currency=transaction.currency,
             reference=reference,
             callback_url=settings.PAYSTACK_CALLBACK_URL,
-            metadata={"transaction_id": transaction.id},
+            metadata={
+                "transaction_id": transaction.id,
+                "anonymous_tip": not bool(tipper_email),
+                "provided_email": bool(tipper_email),
+            },
         )
     except PaystackError as exc:
         transaction.status = Transaction.Status.FAILED

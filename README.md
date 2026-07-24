@@ -7,10 +7,10 @@ card details.
 
 ## How it works
 
-1. Customer fills the `Checkout` form (email + amount) and submits.
+1. Customer fills the `Checkout` form (optional email + amount) and submits.
 2. React calls your backend's `POST /api/payments/initialize/`.
 3. The backend creates a local `Transaction` record, asks Paystack to open
-   a transaction, and returns an `authorization_url`.
+   a transaction with the selected currency, and returns an `authorization_url`.
 4. React redirects the browser to that URL — the customer pays on Paystack.
 5. Paystack redirects back to your `PAYSTACK_CALLBACK_URL` (e.g.
    `/payment/callback?reference=TXN-XXXX`), where `PaymentCallback` calls
@@ -52,6 +52,31 @@ In your Paystack dashboard → Settings → API Keys & Webhooks, set the
 webhook URL to `https://your-domain.com/api/payments/webhook/`. Paystack
 signs every request with `x-paystack-signature`; the view verifies it
 using your secret key before trusting the payload.
+
+### Currency setup
+
+Paystack supports `NGN`, `USD`, `GHS`, `ZAR`, `KES`, and `XOF`, but each
+merchant can only charge currencies Paystack has activated for that business.
+Set `PAYSTACK_ENABLED_CURRENCIES` to the currencies active on your merchant
+account, for example:
+
+```env
+PAYSTACK_ENABLED_CURRENCIES=KES
+PAYSTACK_DEFAULT_CURRENCY=KES
+```
+
+If Paystack later activates USD for the merchant, change it to:
+
+```env
+PAYSTACK_ENABLED_CURRENCIES=KES,USD
+PAYSTACK_DEFAULT_CURRENCY=USD
+```
+
+You can smoke-test configured currencies with:
+
+```bash
+python manage.py test_paystack_currencies --live
+```
 
 ## 2. Frontend setup
 

@@ -9,7 +9,7 @@ const FEATURES = [
   {
     icon: "globe",
     title: "Pay your way",
-    copy: "Choose from KES, NGN, GHS, ZAR, or USD and pay in a few simple steps.",
+    copy: "Choose from the currencies enabled for this merchant and pay in a few simple steps.",
   },
   {
     icon: "spark",
@@ -48,7 +48,7 @@ export default function HomePage() {
           </div>
           <div className="trust-row" aria-label="Checkout benefits">
             <span>Paystack secured</span>
-            <span>5 currencies</span>
+            <span>Merchant-enabled currencies</span>
             <span>Instant verification</span>
           </div>
         </div>

@@ -67,7 +67,7 @@ function SupportPage() {
           <div className="tip-area" id="support">
             <div className="doodle doodle--one" aria-hidden="true">✦</div>
             <div className="doodle doodle--two" aria-hidden="true">~</div>
-            <Checkout defaultAmount="3" />
+            <Checkout />
           </div>
         </section>
 

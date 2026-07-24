@@ -25,6 +25,18 @@ export async function initializePayment({ email, amount, currency = "KES" }) {
   return data; // { authorization_url, access_code, reference }
 }
 
+export async function fetchPaymentCurrencies() {
+  const response = await fetch(`${API_BASE_URL}/currencies/`);
+  const data = await parseJsonSafely(response);
+
+  if (!response.ok) {
+    const message = data?.detail || data?.error || "Could not load payment currencies.";
+    throw new Error(message);
+  }
+
+  return data; // { default_currency, enabled_currencies, supported_currencies }
+}
+
 export async function verifyPayment(reference) {
   const response = await fetch(`${API_BASE_URL}/verify/${reference}/`);
   const data = await parseJsonSafely(response);

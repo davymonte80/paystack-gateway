@@ -8,6 +8,8 @@ from a .env file via django-environ — never hardcode them here.
 from pathlib import Path
 import environ
 
+from payments.currencies import normalize_currency_codes
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
@@ -98,3 +100,8 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localho
 PAYSTACK_SECRET_KEY = env("PAYSTACK_SECRET_KEY")
 PAYSTACK_PUBLIC_KEY = env("PAYSTACK_PUBLIC_KEY")
 PAYSTACK_CALLBACK_URL = env("PAYSTACK_CALLBACK_URL", default="http://localhost:5173/payment/callback")
+PAYSTACK_ANONYMOUS_EMAIL = env("PAYSTACK_ANONYMOUS_EMAIL", default="anonymous@example.com")
+PAYSTACK_ENABLED_CURRENCIES = normalize_currency_codes(env.list("PAYSTACK_ENABLED_CURRENCIES", default=["KES"])) or ["KES"]
+PAYSTACK_DEFAULT_CURRENCY = env("PAYSTACK_DEFAULT_CURRENCY", default=PAYSTACK_ENABLED_CURRENCIES[0]).strip().upper()
+if PAYSTACK_DEFAULT_CURRENCY not in PAYSTACK_ENABLED_CURRENCIES:
+    PAYSTACK_DEFAULT_CURRENCY = PAYSTACK_ENABLED_CURRENCIES[0]

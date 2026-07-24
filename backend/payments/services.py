@@ -25,7 +25,7 @@ class PaystackService:
             "Content-Type": "application/json",
         }
 
-    def initialize_transaction(self, *, email, amount, reference, callback_url=None, metadata=None):
+    def initialize_transaction(self, *, email, amount, currency, reference, callback_url=None, metadata=None):
         """
         Ask Paystack to open a transaction and return the authorization_url
         the customer should be redirected to in order to pay.
@@ -36,6 +36,7 @@ class PaystackService:
         payload = {
             "email": email,
             "amount": int(round(float(amount) * 100)),
+            "currency": currency,
             "reference": reference,
         }
         if callback_url:
