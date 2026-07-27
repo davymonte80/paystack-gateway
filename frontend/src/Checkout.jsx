@@ -243,7 +243,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
 
       {paymentQuote && (
         <p className="tip-footnote" role="status">
-          {paymentQuote.displayCurrency} {paymentQuote.displayAmount} converts at {paymentQuote.exchangeRate}.
+          {paymentQuote.displayCurrency} {paymentQuote.displayAmount} converts at {paymentQuote.exchangeRate}. to Kenyan shillings.
           You will be charged <strong>{paymentQuote.currency} {paymentQuote.amount}</strong>.
         </p>
       )}
