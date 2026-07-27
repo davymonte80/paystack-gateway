@@ -85,17 +85,23 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
       .then((data) => {
         if (!isMounted) return;
 
-        const supportedCurrencies = data.supported_currencies?.length
-          ? data.supported_currencies
-          : FALLBACK_CURRENCIES;
-        const enabledCurrencies = supportedCurrencies.filter((option) => option.enabled);
-        const selectableCurrencies = enabledCurrencies.length
-          ? supportedCurrencies
-          : FALLBACK_CURRENCIES;
-        const defaultCurrency = visitorCurrency() || data.default_currency || enabledCurrencies[0]?.code || FALLBACK_CURRENCIES[0].code;
+        const currencyByCode = new Map(
+          FALLBACK_CURRENCIES.map((option) => [option.code, option]),
+        );
+        for (const option of data.supported_currencies || []) {
+          const fallback = currencyByCode.get(option.code);
+          currencyByCode.set(option.code, {
+            ...fallback,
+            ...option,
+            // A display currency is converted to KES, not sent to Paystack.
+            enabled: true,
+          });
+        }
+        const selectableCurrencies = Array.from(currencyByCode.values());
+        const defaultCurrency = visitorCurrency() || data.default_currency || FALLBACK_CURRENCIES[0].code;
         const defaultOption =
-          enabledCurrencies.find((option) => option.code === defaultCurrency) ||
-          enabledCurrencies[0] ||
+          selectableCurrencies.find((option) => option.code === defaultCurrency) ||
+          selectableCurrencies[0] ||
           FALLBACK_CURRENCIES[0];
 
         setCurrencyOptions(selectableCurrencies);

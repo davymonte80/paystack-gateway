@@ -1,7 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from .currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES, normalize_currency_codes
+from .currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES
 from .models import Transaction
 
 SUPPORTED_CURRENCIES = list(DISPLAY_CURRENCIES.keys())
@@ -16,15 +16,11 @@ class InitializePaymentSerializer(serializers.Serializer):
         return value.strip()
 
     def validate(self, attrs):
-        display_currencies = normalize_currency_codes(
-            settings.PAYSTACK_DISPLAY_CURRENCIES,
-            currencies=DISPLAY_CURRENCIES,
-        )
         currency = attrs.get("currency", settings.PAYSTACK_DEFAULT_CURRENCY)
         amount = attrs["amount"]
         minimum_amount = DISPLAY_CURRENCIES[currency]["minimum_amount"]
 
-        if currency not in display_currencies:
+        if currency not in DISPLAY_CURRENCIES:
             raise serializers.ValidationError(
                 {
                     "currency": (

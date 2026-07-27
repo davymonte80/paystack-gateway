@@ -26,7 +26,10 @@ def payment_currencies(request):
     Return all Paystack-supported currencies plus the subset enabled for
     this merchant account. The frontend should only offer enabled currencies.
     """
-    display_codes = settings.PAYSTACK_DISPLAY_CURRENCIES
+    # These are display currencies only. All are converted and charged in KES,
+    # so their availability does not depend on Paystack's merchant currency
+    # activation setting.
+    display_codes = list(DISPLAY_CURRENCIES.keys())
     supported_currencies = []
     for code in DISPLAY_CURRENCIES.keys():
         currency = serialize_currency(code, currencies=DISPLAY_CURRENCIES)

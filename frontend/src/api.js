@@ -10,6 +10,15 @@ async function parseJsonSafely(response) {
   }
 }
 
+function apiErrorMessage(data, fallback) {
+  if (typeof data?.detail === "string" || typeof data?.error === "string") {
+    return data.detail || data.error;
+  }
+
+  const fieldErrors = Object.values(data || {}).flat().filter(Boolean);
+  return fieldErrors[0] || fallback;
+}
+
 export async function initializePayment({ email, amount, currency = "KES" }) {
   const response = await fetch(`${API_BASE_URL}/initialize/`, {
     method: "POST",
@@ -20,7 +29,7 @@ export async function initializePayment({ email, amount, currency = "KES" }) {
   const data = await parseJsonSafely(response);
 
   if (!response.ok) {
-    const message = data?.detail || data?.error || "Could not start payment.";
+    const message = apiErrorMessage(data, "Could not start payment.");
     throw new Error(message);
   }
 
@@ -32,7 +41,7 @@ export async function fetchPaymentCurrencies() {
   const data = await parseJsonSafely(response);
 
   if (!response.ok) {
-    const message = data?.detail || data?.error || "Could not load payment currencies.";
+    const message = apiErrorMessage(data, "Could not load payment currencies.");
     throw new Error(message);
   }
 
@@ -44,7 +53,7 @@ export async function verifyPayment(reference) {
   const data = await parseJsonSafely(response);
 
   if (!response.ok) {
-    const message = data?.detail || data?.error || "Could not verify payment.";
+    const message = apiErrorMessage(data, "Could not verify payment.");
     throw new Error(message);
   }
 
