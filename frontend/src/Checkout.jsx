@@ -59,7 +59,9 @@ const REGION_CURRENCIES = {
 
 function visitorCurrency() {
   try {
-    const locale = new Intl.Locale(navigator.languages?.[0] || navigator.language);
+    const locale = new Intl.Locale(
+      navigator.languages?.[0] || navigator.language,
+    );
     return REGION_CURRENCIES[locale.region];
   } catch {
     return undefined;
@@ -75,7 +77,9 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentQuote, setPaymentQuote] = useState(null);
 
-  const selectedCurrency = currencyOptions.find((option) => option.code === currency) || currencyOptions[0];
+  const selectedCurrency =
+    currencyOptions.find((option) => option.code === currency) ||
+    currencyOptions[0];
   const minimumAmount = Number(selectedCurrency.minimum_amount);
 
   useEffect(() => {
@@ -98,9 +102,14 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
           });
         }
         const selectableCurrencies = Array.from(currencyByCode.values());
-        const defaultCurrency = visitorCurrency() || data.default_currency || FALLBACK_CURRENCIES[0].code;
+        const defaultCurrency =
+          visitorCurrency() ||
+          data.default_currency ||
+          FALLBACK_CURRENCIES[0].code;
         const defaultOption =
-          selectableCurrencies.find((option) => option.code === defaultCurrency) ||
+          selectableCurrencies.find(
+            (option) => option.code === defaultCurrency,
+          ) ||
           selectableCurrencies[0] ||
           FALLBACK_CURRENCIES[0];
 
@@ -142,8 +151,14 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
     const trimmedEmail = email.trim();
     const numericAmount = Number(amount);
 
-    if (!amount || Number.isNaN(numericAmount) || numericAmount < minimumAmount) {
-      setErrorMessage(`Choose or enter a tip amount of at least ${currency} ${minimumAmount}.`);
+    if (
+      !amount ||
+      Number.isNaN(numericAmount) ||
+      numericAmount < minimumAmount
+    ) {
+      setErrorMessage(
+        `Choose or enter a tip amount of at least ${currency} ${minimumAmount}.`,
+      );
       return;
     }
 
@@ -189,7 +204,9 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   return (
     <form className="tip-card" onSubmit={handleSubmit} noValidate>
       <div className="tip-card__heading">
-        <span className="tip-card__cup" aria-hidden="true">☕</span>
+        <span className="tip-card__cup" aria-hidden="true">
+          ☕
+        </span>
         <div>
           <p className="tip-kicker">Send a little support</p>
           <h2>Buy me a coffee</h2>
@@ -198,7 +215,9 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
 
       <div className="tip-fields">
         <label className="tip-field">
-          <span>Email <small>(optional)</small></span>
+          <span>
+            Email <small>(optional)</small>
+          </span>
           <input
             type="email"
             value={email}
@@ -226,8 +245,13 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
             <span>Currency</span>
             <select value={currency} onChange={changeCurrency}>
               {currencyOptions.map((option) => (
-                <option key={option.code} value={option.code} disabled={option.enabled === false}>
-                  {option.code}{option.enabled === false ? " — not enabled" : ""}
+                <option
+                  key={option.code}
+                  value={option.code}
+                  disabled={option.enabled === false}
+                >
+                  {option.code}
+                  {option.enabled === false ? " — not enabled" : ""}
                 </option>
               ))}
             </select>
@@ -243,8 +267,13 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
 
       {paymentQuote && (
         <p className="tip-footnote" role="status">
-          {paymentQuote.displayCurrency} {paymentQuote.displayAmount} converts at {paymentQuote.exchangeRate}. to Kenyan shillings.
-          You will be charged <strong>{paymentQuote.currency} {paymentQuote.amount}</strong>.
+          {paymentQuote.displayCurrency} {paymentQuote.displayAmount} converts
+          at {paymentQuote.exchangeRate}. to Kenyan shillings. You will be
+          charged{" "}
+          <strong>
+            {paymentQuote.currency} {paymentQuote.amount}
+          </strong>
+          .
         </p>
       )}
 
@@ -257,7 +286,9 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
       </button>
 
       <p className="tip-footnote">
-        Tip anonymously, or add an email only if you want a receipt. Pay securely with Paystack.
+        Tip anonymously, or add an email only if you want a receipt. Pay
+        securely with Paystack.All payments are converted to Kenyan shillings
+        (KES) at the current exchange rate.
       </p>
     </form>
   );
