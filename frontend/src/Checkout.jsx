@@ -3,15 +3,35 @@ import { fetchPaymentCurrencies, initializePayment } from "./api";
 import "./Checkout.css";
 
 const FALLBACK_CURRENCIES = [
-  {
-    code: "KES",
-    name: "Kenyan Shilling",
-    minimum_amount: "3",
-    presets: [250, 750, 1250],
-    enabled: true,
-  },
-];
-const COFFEE_COUNTS = [1, 3, 5];
+  ["KES", "Kenyan Shilling", "3"],
+  ["USD", "US Dollar", "1"],
+  ["NGN", "Nigerian Naira", "1"],
+  ["GHS", "Ghanaian Cedi", "1"],
+  ["ZAR", "South African Rand", "1"],
+  ["XOF", "West African CFA Franc", "1"],
+  ["EUR", "Euro", "1"],
+  ["GBP", "British Pound", "1"],
+  ["CAD", "Canadian Dollar", "1"],
+  ["AUD", "Australian Dollar", "1"],
+  ["CHF", "Swiss Franc", "1"],
+  ["JPY", "Japanese Yen", "1"],
+  ["CNY", "Chinese Yuan", "1"],
+  ["INR", "Indian Rupee", "1"],
+  ["AED", "United Arab Emirates Dirham", "1"],
+  ["SGD", "Singapore Dollar", "1"],
+  ["HKD", "Hong Kong Dollar", "1"],
+  ["NZD", "New Zealand Dollar", "1"],
+  ["SEK", "Swedish Krona", "1"],
+  ["NOK", "Norwegian Krone", "1"],
+  ["DKK", "Danish Krone", "1"],
+  ["BRL", "Brazilian Real", "1"],
+  ["MXN", "Mexican Peso", "1"],
+].map(([code, name, minimum_amount]) => ({
+  code,
+  name,
+  minimum_amount,
+  enabled: true,
+}));
 const REGION_CURRENCIES = {
   KE: "KES",
   NG: "NGN",
@@ -49,9 +69,8 @@ function visitorCurrency() {
 export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [email, setEmail] = useState("");
   const [currencyOptions, setCurrencyOptions] = useState(FALLBACK_CURRENCIES);
-  const [amount, setAmount] = useState(defaultAmount || String(FALLBACK_CURRENCIES[0].presets[0]));
+  const [amount, setAmount] = useState(defaultAmount);
   const [currency, setCurrency] = useState(FALLBACK_CURRENCIES[0].code);
-  const [selectedPreset, setSelectedPreset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentQuote, setPaymentQuote] = useState(null);
@@ -82,8 +101,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
         setCurrencyOptions(selectableCurrencies);
         setCurrency(defaultOption.code);
 
-        setSelectedPreset(0);
-        setAmount(String(defaultOption.presets[0]));
+        setAmount(defaultAmount);
       })
       .catch((error) => {
         onError?.(error);
@@ -92,33 +110,18 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
     return () => {
       isMounted = false;
     };
-  }, [onError]);
-
-  const choosePreset = (index) => {
-    setSelectedPreset(index);
-    setAmount(String(selectedCurrency.presets[index]));
-  };
+  }, [defaultAmount, onError]);
 
   const changeCurrency = (event) => {
     setPaymentQuote(null);
     const nextCurrency = event.target.value;
-    const nextCurrencyOption =
-      currencyOptions.find((option) => option.code === nextCurrency) || currencyOptions[0];
 
     setCurrency(nextCurrency);
-    if (selectedPreset !== null) {
-      setAmount(String(nextCurrencyOption.presets[selectedPreset]));
-    }
   };
 
   const changeAmount = (event) => {
     setPaymentQuote(null);
     setAmount(event.target.value);
-    setSelectedPreset(null);
-  };
-
-  const chooseCustomAmount = () => {
-    setSelectedPreset(null);
   };
 
   const handleSubmit = async (event) => {
@@ -145,6 +148,22 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
         amount,
         currency,
       });
+
+      // KES is already the charge currency. Older backend deployments also
+      // return only the authorization URL, so redirect rather than rendering
+      // an incomplete conversion confirmation.
+      if (
+        currency === "KES" ||
+        !result.charge_amount ||
+        !result.charge_currency ||
+        !result.display_amount ||
+        !result.display_currency ||
+        !result.exchange_rate
+      ) {
+        window.location.href = result.authorization_url;
+        return;
+      }
+
       setPaymentQuote({
         authorizationUrl: result.authorization_url,
         amount: result.charge_amount,
@@ -170,35 +189,6 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
           <h2>Buy me a coffee</h2>
         </div>
       </div>
-
-      <fieldset className="coffee-picker">
-        <legend>Choose a coffee</legend>
-        <div className="coffee-options">
-          {COFFEE_COUNTS.map((count, index) => (
-            <button
-              type="button"
-              className={selectedPreset === index ? "is-selected" : ""}
-              key={count}
-              onClick={() => choosePreset(index)}
-              aria-pressed={selectedPreset === index}
-            >
-              <span aria-hidden="true">☕</span>
-              <strong>{count}</strong>
-              <small>{count === 1 ? "coffee" : "coffees"}</small>
-            </button>
-          ))}
-          <button
-            type="button"
-            className={selectedPreset === null ? "is-selected" : ""}
-            onClick={chooseCustomAmount}
-            aria-pressed={selectedPreset === null}
-          >
-            <span aria-hidden="true">✍️</span>
-            <strong>Custom</strong>
-            <small>amount</small>
-          </button>
-        </div>
-      </fieldset>
 
       <div className="tip-fields">
         <label className="tip-field">
