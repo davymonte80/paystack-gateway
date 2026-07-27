@@ -1,10 +1,10 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from .currencies import PAYSTACK_CURRENCIES, normalize_currency_codes
+from .currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES, normalize_currency_codes
 from .models import Transaction
 
-SUPPORTED_CURRENCIES = list(PAYSTACK_CURRENCIES.keys())
+SUPPORTED_CURRENCIES = list(DISPLAY_CURRENCIES.keys())
 
 
 class InitializePaymentSerializer(serializers.Serializer):
@@ -16,17 +16,19 @@ class InitializePaymentSerializer(serializers.Serializer):
         return value.strip()
 
     def validate(self, attrs):
-        enabled_currencies = normalize_currency_codes(settings.PAYSTACK_ENABLED_CURRENCIES)
+        display_currencies = normalize_currency_codes(
+            settings.PAYSTACK_DISPLAY_CURRENCIES,
+            currencies=DISPLAY_CURRENCIES,
+        )
         currency = attrs.get("currency", settings.PAYSTACK_DEFAULT_CURRENCY)
         amount = attrs["amount"]
-        minimum_amount = PAYSTACK_CURRENCIES[currency]["minimum_amount"]
+        minimum_amount = DISPLAY_CURRENCIES[currency]["minimum_amount"]
 
-        if currency not in enabled_currencies:
+        if currency not in display_currencies:
             raise serializers.ValidationError(
                 {
                     "currency": (
-                        f"{currency} is supported by Paystack, but it is not enabled for this merchant. "
-                        "Update PAYSTACK_ENABLED_CURRENCIES only after Paystack activates it for your business."
+                        f"{currency} is not available for display."
                     )
                 }
             )
@@ -42,5 +44,8 @@ class InitializePaymentSerializer(serializers.Serializer):
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
-        fields = ["reference", "email", "amount", "currency", "status", "created_at", "updated_at"]
+        fields = [
+            "reference", "email", "amount", "currency", "display_amount",
+            "display_currency", "exchange_rate", "status", "created_at", "updated_at",
+        ]
         read_only_fields = fields

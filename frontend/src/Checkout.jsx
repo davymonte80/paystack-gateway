@@ -12,6 +12,39 @@ const FALLBACK_CURRENCIES = [
   },
 ];
 const COFFEE_COUNTS = [1, 3, 5];
+const REGION_CURRENCIES = {
+  KE: "KES",
+  NG: "NGN",
+  GH: "GHS",
+  ZA: "ZAR",
+  CI: "XOF",
+  US: "USD",
+  GB: "GBP",
+  CA: "CAD",
+  AU: "AUD",
+  CH: "CHF",
+  CN: "CNY",
+  IN: "INR",
+  JP: "JPY",
+  AE: "AED",
+  SG: "SGD",
+  HK: "HKD",
+  NZ: "NZD",
+  SE: "SEK",
+  NO: "NOK",
+  DK: "DKK",
+  BR: "BRL",
+  MX: "MXN",
+};
+
+function visitorCurrency() {
+  try {
+    const locale = new Intl.Locale(navigator.languages?.[0] || navigator.language);
+    return REGION_CURRENCIES[locale.region];
+  } catch {
+    return undefined;
+  }
+}
 
 export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [email, setEmail] = useState("");
@@ -21,6 +54,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [selectedPreset, setSelectedPreset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [paymentQuote, setPaymentQuote] = useState(null);
 
   const selectedCurrency = currencyOptions.find((option) => option.code === currency) || currencyOptions[0];
   const minimumAmount = Number(selectedCurrency.minimum_amount);
@@ -39,7 +73,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
         const selectableCurrencies = enabledCurrencies.length
           ? supportedCurrencies
           : FALLBACK_CURRENCIES;
-        const defaultCurrency = data.default_currency || enabledCurrencies[0]?.code || FALLBACK_CURRENCIES[0].code;
+        const defaultCurrency = visitorCurrency() || data.default_currency || enabledCurrencies[0]?.code || FALLBACK_CURRENCIES[0].code;
         const defaultOption =
           enabledCurrencies.find((option) => option.code === defaultCurrency) ||
           enabledCurrencies[0] ||
@@ -66,6 +100,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   };
 
   const changeCurrency = (event) => {
+    setPaymentQuote(null);
     const nextCurrency = event.target.value;
     const nextCurrencyOption =
       currencyOptions.find((option) => option.code === nextCurrency) || currencyOptions[0];
@@ -77,6 +112,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   };
 
   const changeAmount = (event) => {
+    setPaymentQuote(null);
     setAmount(event.target.value);
     setSelectedPreset(null);
   };
@@ -89,6 +125,11 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
     event.preventDefault();
     setErrorMessage("");
 
+    if (paymentQuote) {
+      window.location.href = paymentQuote.authorizationUrl;
+      return;
+    }
+
     const trimmedEmail = email.trim();
     const numericAmount = Number(amount);
 
@@ -99,12 +140,20 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
 
     setIsSubmitting(true);
     try {
-      const { authorization_url: authorizationUrl } = await initializePayment({
+      const result = await initializePayment({
         email: trimmedEmail || undefined,
         amount,
         currency,
       });
-      window.location.href = authorizationUrl;
+      setPaymentQuote({
+        authorizationUrl: result.authorization_url,
+        amount: result.charge_amount,
+        currency: result.charge_currency,
+        displayAmount: result.display_amount,
+        displayCurrency: result.display_currency,
+        exchangeRate: result.exchange_rate,
+      });
+      setIsSubmitting(false);
     } catch (error) {
       setErrorMessage(error.message);
       onError?.(error);
@@ -196,10 +245,19 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
         </p>
       )}
 
+      {paymentQuote && (
+        <p className="tip-footnote" role="status">
+          {paymentQuote.displayCurrency} {paymentQuote.displayAmount} converts at {paymentQuote.exchangeRate}.
+          You will be charged <strong>{paymentQuote.currency} {paymentQuote.amount}</strong>.
+        </p>
+      )}
+
       <button type="submit" className="tip-submit" disabled={isSubmitting}>
         {isSubmitting
           ? "Opening Paystack…"
-          : `Send ${amount ? `${currency} ${amount}` : "a coffee"} ☕`}
+          : paymentQuote
+            ? `Continue to pay ${paymentQuote.currency} ${paymentQuote.amount} ☕`
+            : `Send ${amount ? `${currency} ${amount}` : "a coffee"} ☕`}
       </button>
 
       <p className="tip-footnote">

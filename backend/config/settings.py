@@ -8,7 +8,7 @@ from a .env file via django-environ — never hardcode them here.
 from pathlib import Path
 import environ
 
-from payments.currencies import normalize_currency_codes
+from payments.currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES, normalize_currency_codes
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -114,3 +114,17 @@ PAYSTACK_ENABLED_CURRENCIES = normalize_currency_codes(env.list("PAYSTACK_ENABLE
 PAYSTACK_DEFAULT_CURRENCY = env("PAYSTACK_DEFAULT_CURRENCY", default=PAYSTACK_ENABLED_CURRENCIES[0]).strip().upper()
 if PAYSTACK_DEFAULT_CURRENCY not in PAYSTACK_ENABLED_CURRENCIES:
     PAYSTACK_DEFAULT_CURRENCY = PAYSTACK_ENABLED_CURRENCIES[0]
+
+# Customers may select any of these currencies for the amount they see. Every
+# payment is then converted server-side and charged to Paystack in KES.
+PAYSTACK_CHARGE_CURRENCY = "KES"
+PAYSTACK_DISPLAY_CURRENCIES = normalize_currency_codes(
+    env.list("PAYSTACK_DISPLAY_CURRENCIES", default=list(DISPLAY_CURRENCIES.keys())),
+    currencies=DISPLAY_CURRENCIES,
+) or [PAYSTACK_CHARGE_CURRENCY]
+if PAYSTACK_CHARGE_CURRENCY not in PAYSTACK_DISPLAY_CURRENCIES:
+    PAYSTACK_DISPLAY_CURRENCIES.insert(0, PAYSTACK_CHARGE_CURRENCY)
+PAYSTACK_EXCHANGE_RATE_URL = env(
+    "PAYSTACK_EXCHANGE_RATE_URL",
+    default="https://api.frankfurter.dev/v2/rate/{base}/{quote}",
+)

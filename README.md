@@ -72,6 +72,23 @@ PAYSTACK_ENABLED_CURRENCIES=KES,USD
 PAYSTACK_DEFAULT_CURRENCY=USD
 ```
 
+### Show local currencies, charge in KES
+
+This project can show customers KES, USD, NGN, GHS, ZAR, or XOF while always
+charging Paystack in KES. The backend obtains a server-side exchange rate when
+checkout starts and the customer must confirm the exact KES charge before being
+sent to Paystack. Keep the actual Paystack charging configuration on KES:
+
+```env
+PAYSTACK_ENABLED_CURRENCIES=KES
+PAYSTACK_DEFAULT_CURRENCY=KES
+PAYSTACK_DISPLAY_CURRENCIES=KES,USD,NGN,GHS,ZAR,XOF,EUR,GBP,CAD,AUD,CHF,JPY,CNY,INR,AED,SGD,HKD,NZD,SEK,NOK,DKK,BRL,MXN
+```
+
+The default FX provider is Frankfurter's public daily-rate API. For a production
+pricing policy, replace `PAYSTACK_EXCHANGE_RATE_URL` with a contracted provider
+or a rate source approved for your accounting requirements.
+
 You can smoke-test configured currencies with:
 
 ```bash
