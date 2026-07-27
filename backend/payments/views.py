@@ -11,7 +11,8 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .currencies import PAYSTACK_CURRENCIES, serialize_currency
+from .currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES, serialize_currency
+from .exchange_rates import ExchangeRateError, convert_to_charge_currency
 from .models import Transaction
 from .serializers import InitializePaymentSerializer, TransactionSerializer
 from .services import PaystackError, PaystackService
@@ -25,17 +26,18 @@ def payment_currencies(request):
     Return all Paystack-supported currencies plus the subset enabled for
     this merchant account. The frontend should only offer enabled currencies.
     """
-    enabled_codes = settings.PAYSTACK_ENABLED_CURRENCIES
+    display_codes = settings.PAYSTACK_DISPLAY_CURRENCIES
     supported_currencies = []
-    for code in PAYSTACK_CURRENCIES.keys():
-        currency = serialize_currency(code)
-        currency["enabled"] = code in enabled_codes
+    for code in DISPLAY_CURRENCIES.keys():
+        currency = serialize_currency(code, currencies=DISPLAY_CURRENCIES)
+        currency["enabled"] = code in display_codes
         supported_currencies.append(currency)
 
     return Response(
         {
-            "default_currency": settings.PAYSTACK_DEFAULT_CURRENCY,
-            "enabled_currencies": [serialize_currency(code) for code in enabled_codes],
+            "default_currency": settings.PAYSTACK_CHARGE_CURRENCY,
+            "charge_currency": settings.PAYSTACK_CHARGE_CURRENCY,
+            "enabled_currencies": [serialize_currency(code, currencies=DISPLAY_CURRENCIES) for code in display_codes],
             "supported_currencies": supported_currencies,
         },
         status=status.HTTP_200_OK,
@@ -57,11 +59,27 @@ def initialize_payment(request):
     tipper_email = data.get("email", "")
     paystack_email = tipper_email or settings.PAYSTACK_ANONYMOUS_EMAIL
 
+    display_currency = data.get("currency", settings.PAYSTACK_CHARGE_CURRENCY)
+    try:
+        charge_amount, exchange_rate = convert_to_charge_currency(data["amount"], display_currency)
+    except ExchangeRateError as exc:
+        return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+    minimum_charge_amount = PAYSTACK_CURRENCIES[settings.PAYSTACK_CHARGE_CURRENCY]["minimum_amount"]
+    if charge_amount < minimum_charge_amount:
+        return Response(
+            {"amount": f"Converted payment must be at least KES {minimum_charge_amount}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     transaction = Transaction.objects.create(
         reference=reference,
         email=tipper_email,
-        amount=data["amount"],
-        currency=data.get("currency", settings.PAYSTACK_DEFAULT_CURRENCY),
+        amount=charge_amount,
+        currency=settings.PAYSTACK_CHARGE_CURRENCY,
+        display_amount=data["amount"],
+        display_currency=display_currency,
+        exchange_rate=exchange_rate,
     )
 
     try:
@@ -75,6 +93,9 @@ def initialize_payment(request):
                 "transaction_id": transaction.id,
                 "anonymous_tip": not bool(tipper_email),
                 "provided_email": bool(tipper_email),
+                "display_amount": str(transaction.display_amount),
+                "display_currency": transaction.display_currency,
+                "exchange_rate_to_kes": str(transaction.exchange_rate),
             },
         )
     except PaystackError as exc:
@@ -90,6 +111,11 @@ def initialize_payment(request):
             "authorization_url": result["data"]["authorization_url"],
             "access_code": result["data"]["access_code"],
             "reference": reference,
+            "charge_amount": str(transaction.amount),
+            "charge_currency": transaction.currency,
+            "display_amount": str(transaction.display_amount),
+            "display_currency": transaction.display_currency,
+            "exchange_rate": str(transaction.exchange_rate),
         },
         status=status.HTTP_200_OK,
     )
