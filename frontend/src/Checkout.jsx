@@ -170,9 +170,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
         currency,
       });
 
-      // KES is already the charge currency. Older backend deployments also
-      // return only the authorization URL, so redirect rather than rendering
-      // an incomplete conversion confirmation.
+    
       if (
         currency === "KES" ||
         !result.charge_amount ||
