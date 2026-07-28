@@ -1,9 +1,13 @@
 import logging
+from io import BytesIO
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.db import transaction as db_transaction
 from django.utils import timezone
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 from .models import Transaction
 
@@ -12,6 +16,51 @@ logger = logging.getLogger(__name__)
 
 def _format_amount(amount):
     return f"{amount:,.2f}"
+
+
+def build_receipt_pdf(transaction):
+    """Build a compact PDF receipt for a confirmed contribution."""
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    page_width, page_height = A4
+
+    pdf.setFillColor(colors.HexColor("#5b3425"))
+    pdf.rect(0, page_height - 105, page_width, 105, fill=1, stroke=0)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 22)
+    pdf.drawString(48, page_height - 58, "Buy Me Espresso")
+    pdf.setFont("Helvetica", 11)
+    pdf.drawString(48, page_height - 80, "Payment receipt")
+
+    display_amount = transaction.display_amount or transaction.amount
+    display_currency = transaction.display_currency or transaction.currency
+    rows = [
+        ("Status", "Successful"),
+        ("Contribution", f"{display_currency} {_format_amount(display_amount)}"),
+        ("Reference", transaction.reference),
+        ("Date", transaction.created_at.strftime("%d %B %Y, %H:%M UTC")),
+    ]
+    if display_currency != transaction.currency or display_amount != transaction.amount:
+        rows.insert(2, ("Amount charged", f"{transaction.currency} {_format_amount(transaction.amount)}"))
+
+    y = page_height - 150
+    for label, value in rows:
+        pdf.setFillColor(colors.HexColor("#6d625c"))
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(48, y, label.upper())
+        pdf.setFillColor(colors.HexColor("#231f20"))
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(185, y, value)
+        pdf.setStrokeColor(colors.HexColor("#e7dfd8"))
+        pdf.line(48, y - 14, page_width - 48, y - 14)
+        y -= 42
+
+    pdf.setFillColor(colors.HexColor("#6d625c"))
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(48, 75, "Thank you for supporting Buy Me Espresso.")
+    pdf.save()
+    buffer.seek(0)
+    return buffer.read()
 
 
 def send_success_receipt(reference, paystack_response):
@@ -30,34 +79,24 @@ def send_success_receipt(reference, paystack_response):
         if not transaction.email or transaction.receipt_sent_at:
             return
 
-        display_amount = transaction.display_amount or transaction.amount
-        display_currency = transaction.display_currency or transaction.currency
-        charged_amount = _format_amount(transaction.amount)
-        contributed_amount = _format_amount(display_amount)
-        charged_line = ""
-        if (
-            display_currency != transaction.currency
-            or display_amount != transaction.amount
-        ):
-            charged_line = (
-                f"\nAmount charged: {transaction.currency} {charged_amount}\n"
-            )
-
         try:
-            send_mail(
+            message = EmailMessage(
                 subject="Your Buy Me Espresso receipt",
                 message=(
                     "Thank you for your contribution!\n\n"
-                    f"Contribution: {display_currency} {contributed_amount}\n"
-                    f"Reference: {transaction.reference}\n"
-                    f"Status: Successful\n"
-                    f"{charged_line}\n"
-                    "Your payment was confirmed by Paystack."
+                    "Your payment was confirmed by Paystack. Your PDF receipt "
+                    "is attached to this email.\n\n"
+                    f"Reference: {transaction.reference}"
                 ),
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[transaction.email],
-                fail_silently=False,
+                to=[transaction.email],
             )
+            message.attach(
+                f"buy-me-espresso-receipt-{transaction.reference}.pdf",
+                build_receipt_pdf(transaction),
+                "application/pdf",
+            )
+            message.send(fail_silently=False)
         except Exception:
             # Do not turn a confirmed Paystack payment into a failed request.
             # Leaving receipt_sent_at empty allows a later verification to retry.
