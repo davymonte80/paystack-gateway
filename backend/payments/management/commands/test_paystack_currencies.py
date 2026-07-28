@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -38,7 +39,7 @@ class Command(BaseCommand):
 
         failures = []
         for currency in currencies:
-            amount = PAYSTACK_CURRENCIES[currency]["minimum_amount"]
+            amount = Decimal("1")
             reference = f"CUR-{currency}-{uuid.uuid4().hex[:10].upper()}"
 
             if not options["live"]:

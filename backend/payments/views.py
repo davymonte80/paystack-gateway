@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .currencies import DISPLAY_CURRENCIES, PAYSTACK_CURRENCIES, serialize_currency
+from .currencies import DISPLAY_CURRENCIES, serialize_currency
 from .exchange_rates import ExchangeRateError, convert_to_charge_currency
 from .models import Transaction
 from .serializers import InitializePaymentSerializer, TransactionSerializer
@@ -67,13 +67,6 @@ def initialize_payment(request):
         charge_amount, exchange_rate = convert_to_charge_currency(data["amount"], display_currency)
     except ExchangeRateError as exc:
         return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-
-    minimum_charge_amount = PAYSTACK_CURRENCIES[settings.PAYSTACK_CHARGE_CURRENCY]["minimum_amount"]
-    if charge_amount < minimum_charge_amount:
-        return Response(
-            {"amount": f"Converted payment must be at least KES {minimum_charge_amount}."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
     transaction = Transaction.objects.create(
         reference=reference,
