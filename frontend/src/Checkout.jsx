@@ -3,33 +3,32 @@ import { fetchPaymentCurrencies, initializePayment } from "./api";
 import "./Checkout.css";
 
 const FALLBACK_CURRENCIES = [
-  ["KES", "Kenyan Shilling", "3"],
-  ["USD", "US Dollar", "1"],
-  ["NGN", "Nigerian Naira", "1"],
-  ["GHS", "Ghanaian Cedi", "1"],
-  ["ZAR", "South African Rand", "1"],
-  ["XOF", "West African CFA Franc", "1"],
-  ["EUR", "Euro", "1"],
-  ["GBP", "British Pound", "1"],
-  ["CAD", "Canadian Dollar", "1"],
-  ["AUD", "Australian Dollar", "1"],
-  ["CHF", "Swiss Franc", "1"],
-  ["JPY", "Japanese Yen", "1"],
-  ["CNY", "Chinese Yuan", "1"],
-  ["INR", "Indian Rupee", "1"],
-  ["AED", "United Arab Emirates Dirham", "1"],
-  ["SGD", "Singapore Dollar", "1"],
-  ["HKD", "Hong Kong Dollar", "1"],
-  ["NZD", "New Zealand Dollar", "1"],
-  ["SEK", "Swedish Krona", "1"],
-  ["NOK", "Norwegian Krone", "1"],
-  ["DKK", "Danish Krone", "1"],
-  ["BRL", "Brazilian Real", "1"],
-  ["MXN", "Mexican Peso", "1"],
-].map(([code, name, minimum_amount]) => ({
+  ["KES", "Kenyan Shilling"],
+  ["USD", "US Dollar"],
+  ["NGN", "Nigerian Naira"],
+  ["GHS", "Ghanaian Cedi"],
+  ["ZAR", "South African Rand"],
+  ["XOF", "West African CFA Franc"],
+  ["EUR", "Euro"],
+  ["GBP", "British Pound"],
+  ["CAD", "Canadian Dollar"],
+  ["AUD", "Australian Dollar"],
+  ["CHF", "Swiss Franc"],
+  ["JPY", "Japanese Yen"],
+  ["CNY", "Chinese Yuan"],
+  ["INR", "Indian Rupee"],
+  ["AED", "United Arab Emirates Dirham"],
+  ["SGD", "Singapore Dollar"],
+  ["HKD", "Hong Kong Dollar"],
+  ["NZD", "New Zealand Dollar"],
+  ["SEK", "Swedish Krona"],
+  ["NOK", "Norwegian Krone"],
+  ["DKK", "Danish Krone"],
+  ["BRL", "Brazilian Real"],
+  ["MXN", "Mexican Peso"],
+].map(([code, name]) => ({
   code,
   name,
-  minimum_amount,
   enabled: true,
 }));
 const REGION_CURRENCIES = {
@@ -76,11 +75,6 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [paymentQuote, setPaymentQuote] = useState(null);
-
-  const selectedCurrency =
-    currencyOptions.find((option) => option.code === currency) ||
-    currencyOptions[0];
-  const minimumAmount = Number(selectedCurrency.minimum_amount);
 
   useEffect(() => {
     let isMounted = true;
@@ -154,10 +148,10 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
     if (
       !amount ||
       Number.isNaN(numericAmount) ||
-      numericAmount < minimumAmount
+      numericAmount <= 0
     ) {
       setErrorMessage(
-        `Choose or enter a tip amount of at least ${currency} ${minimumAmount}.`,
+        "Enter a tip amount greater than zero.",
       );
       return;
     }
@@ -230,7 +224,7 @@ export default function Checkout({ defaultAmount = "", onError } = {}) {
             <span>Tip amount</span>
             <input
               type="number"
-              min={minimumAmount}
+              min="0.01"
               step="0.01"
               value={amount}
               onChange={changeAmount}
