@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from .currencies import DISPLAY_CURRENCIES, serialize_currency
 from .exchange_rates import ExchangeRateError, convert_to_charge_currency
 from .models import Transaction
+from .receipts import send_success_receipt
 from .serializers import InitializePaymentSerializer, TransactionSerializer
 from .services import PaystackError, PaystackService
 
@@ -137,11 +138,13 @@ def verify_payment(request, reference):
         )
 
     paystack_status = result["data"]["status"]
-    transaction.status = (
-        Transaction.Status.SUCCESS if paystack_status == "success" else Transaction.Status.FAILED
-    )
-    transaction.paystack_response = result["data"]
-    transaction.save(update_fields=["status", "paystack_response", "updated_at"])
+    if paystack_status == "success":
+        send_success_receipt(reference, result["data"])
+        transaction.refresh_from_db()
+    else:
+        transaction.status = Transaction.Status.FAILED
+        transaction.paystack_response = result["data"]
+        transaction.save(update_fields=["status", "paystack_response", "updated_at"])
 
     return Response(TransactionSerializer(transaction).data, status=status.HTTP_200_OK)
 
@@ -172,10 +175,7 @@ def paystack_webhook(request):
     if event.get("event") == "charge.success":
         data = event["data"]
         reference = data.get("reference")
-        Transaction.objects.filter(reference=reference).update(
-            status=Transaction.Status.SUCCESS,
-            paystack_response=data,
-        )
+        send_success_receipt(reference, data)
 
     # Always return 200 so Paystack doesn't keep retrying a handled event.
     return HttpResponse(status=200)
